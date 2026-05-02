@@ -1,0 +1,35 @@
+{
+  "name": "spotimplant",
+  "baseUrl": "https://www.spotimplant.com",
+  "description": "SpotImplant.com — dental implant database with technical specs and images",
+  "listing": {
+    "productCardSelector": ".implant-card, .card, [class*='implant']",
+    "productLinkSelector": "a[href*='/dental-implants/']",
+    "productNameSelector": "h5, h4, .card-title",
+    "productImageSelector": "img[src*='images.spotimplant.com']",
+    "paginationStyle": "none",
+    "urlPattern": "/en/dental-implants/{brand-slug}/{product-slug}"
+  },
+  "detail": {
+    "nameSelector": "h1",
+    "brandSelector": "h1 + p a, .brand-link",
+    "descriptionSelector": ".description, p.lead, [class*='description']",
+    "imageSelectors": [
+      "img[src*='images.spotimplant.com']",
+      ".product-image img",
+      ".carousel img"
+    ],
+    "specsSelector": "ul li",
+    "specsContainerSelector": "h2:contains('Technical Features') + ul, h3:contains('Technical Features') + ul",
+    "specsPattern": "^(.+?):\\s*(.+)$",
+    "additionalFields": {
+      "screwdrivers": "h3:contains('Screwdriver') + ul li",
+      "manufacturerUrl": "a[href*='manufacturer'], a.external-link"
+    }
+  },
+  "imageHosting": "https://images.spotimplant.com",
+  "rateLimit": {
+    "requestsPerSecond": 2,
+    "delayBetweenPages": 1500
+  }
+}

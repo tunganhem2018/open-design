@@ -1,0 +1,16 @@
+{
+  "name": "product-scraper-scripts",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Product scraper scripts for WooCommerce import",
+  "scripts": {
+    "discover": "node scraper.mjs discover",
+    "scrape": "node scraper.mjs scrape",
+    "full": "node scraper.mjs full",
+    "download-images": "node image-downloader.mjs",
+    "format": "node woo-formatter.mjs"
+  },
+  "dependencies": {
+    "jsdom": "^25.0.0"
+  }
+}
