@@ -1,0 +1,108 @@
+name: Validate Skills
+
+on:
+  pull_request:
+    paths:
+      - "skills/**"
+      - "scripts/validate-skill-frontmatter.py"
+      - ".github/workflows/validate-skills.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "skills/**"
+      - "scripts/validate-skill-frontmatter.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: validate-skills-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Structural validation: YAML frontmatter, required fields ──
+  structural:
+    name: "Structural (frontmatter + required fields)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install python-frontmatter
+
+      - name: Validate all SKILL.md files
+        run: python3 scripts/validate-skill-frontmatter.py skills/ --ci
+
+  # ── Security scan: Cisco Skill Scanner (static + behavioral) ──
+  security:
+    name: "Security (Cisco Skill Scanner)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install skill-scanner
+        run: pip install cisco-ai-skill-scanner
+
+      - name: Security scan
+        id: scan
+        run: |
+          skill-scanner scan-all skills/ \
+            --recursive \
+            --use-behavioral \
+            --format sarif \
+            --output skill-scan-results.sarif \
+            --fail-on-severity high
+        continue-on-error: true
+
+      - name: Upload SARIF results
+        if: always() && steps.scan.outcome != 'skipped'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: skill-scan-results.sarif
+          category: skill-scanner
+
+      - name: Check for critical findings
+        if: steps.scan.outcome == 'failure'
+        run: |
+          echo "## ⚠️ Security Scan Found Issues" >> $GITHUB_STEP_SUMMARY
+          echo "Security scan detected HIGH or CRITICAL findings in skills." >> $GITHUB_STEP_SUMMARY
+          echo "Review the SARIF results in the Security tab." >> $GITHUB_STEP_SUMMARY
+          echo "If these are false positives, run with --policy permissive to suppress." >> $GITHUB_STEP_SUMMARY
+
+  # ── Summary ──
+  summary:
+    name: "Summary"
+    needs: [structural, security]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Final status
+        run: |
+          echo "## Skill Validation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.structural.result }}" = "success" ]; then
+            echo "| Frontmatter & required fields | ✅ Pass |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Frontmatter & required fields | ❌ Issues found |" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ needs.security.result }}" = "success" ]; then
+            echo "| Security scan | ✅ Pass |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.security.result }}" = "failure" ]; then
+            echo "| Security scan | ⚠️ Findings — review Security tab |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Security scan | ⚠️ Skipped/error |" >> $GITHUB_STEP_SUMMARY
+          fi

@@ -1,0 +1,27 @@
+# Pre-commit hooks for Open Design
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # ── Skill validation ──────────────────────────────────────────────
+  - repo: local
+    hooks:
+      - id: validate-skill-frontmatter
+        name: Validate SKILL.md frontmatter
+        description: Check that all SKILL.md files have valid YAML frontmatter, name, and description
+        entry: python3 scripts/validate-skill-frontmatter.py
+        language: system
+        files: ^skills/.*/SKILL\.md$
+        pass_filenames: false
+        args: ["--ci"]
+
+      # Security scanning via Cisco Skill Scanner (optional — requires install)
+      # Uncomment to enable:
+      # - id: skill-scanner-security
+      #   name: Security scan skills
+      #   description: Scan skills for prompt injection, data exfiltration, malicious patterns
+      #   entry: skill-scanner scan
+      #   language: system
+      #   files: ^skills/.*/SKILL\.md$
+      #   pass_filenames: true
+      #   args: ["--use-behavioral", "--fail-on-severity", "high"]
